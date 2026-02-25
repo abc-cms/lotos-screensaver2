@@ -1,8 +1,11 @@
-libglew-dev
-libsdl2-ttf-dev
-
-
 ### Installation
+Run:
+```
+sudo apt install -y libglew-dev libsdl2-ttf-dev
+```
+
+
+Outdated. TODO: update.
 Run:
 ```
 chmod +x ./postinstall.sh
