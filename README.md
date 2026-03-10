@@ -1,21 +1,21 @@
-### Installation
+### Prerequisites
 Run:
 ```
-sudo apt install -y libglew-dev libsdl2-ttf-dev
+sudo apt install -y meson libglew-dev libsdl2-ttf-dev
 ```
 
-
-Outdated. TODO: update.
+### Build
 Run:
 ```
-chmod +x ./postinstall.sh
-sudo apt install -y cmake libjsoncpp-dev libspdlog-dev libcairo2-dev extra-cmake-modules libopencv-dev libxcb-image0-dev libxcb-screensaver0-dev
-mkdir build
+meson setup build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-sudo make install
-../postinstall.sh
+meson compile
 ```
+
+### Service
+config/systemd/lotos-idle.service
+
+Put lotos-idle and lotos-screensaver binaries into /usr/local/bin/ directory.
 
 Configuration file `~/.config/lotos-screensaver/config/config.yaml`.
 Media files `~/.config/lotos-screensaver/media`.
