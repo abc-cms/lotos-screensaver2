@@ -113,15 +113,15 @@ public:
 
     static configuration_t load(const std::filesystem::path &path) {
         configuration_t configuration;
-        std::cout << 3<< std::endl;
+        //std::cout << 3<< std::endl;
         auto log = spdlog::get(log_name);
         log->info("Loading configuration from {}", static_cast<std::string>(path));
-        std::cout << 4<< std::endl;
+        //std::cout << 4<< std::endl;
         Json::Value root;
         std::ifstream file(path);
 
         if (file.bad()) {
-            std::cout << 5<< std::endl;
+            //std::cout << 5<< std::endl;
             log->error("Unable to open configuration file: {}", static_cast<std::string>(path));
             throw std::runtime_error("Read configuration error");
         }
@@ -132,7 +132,7 @@ public:
         if (!parseFromStream(builder, file, &root, &errors)) {
             log->error("Unable to load configuration from file {} due to errors: {}", static_cast<std::string>(path),
                        errors);
-            std::cout << static_cast<std::string>(path) << " " << errors << std::endl;
+            //std::cout << static_cast<std::string>(path) << " " << errors << std::endl;
             throw std::runtime_error("Read configuration error");
         }
 
@@ -184,7 +184,7 @@ public:
         configuration.m_activity_frames.push_back(interval);
 
         log->info("Configuration loaded");
-        std::cout << 100 << std::endl;
+        //std::cout << 100 << std::endl;
         return configuration;
     }
 

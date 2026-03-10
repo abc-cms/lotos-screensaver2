@@ -4,7 +4,7 @@ After=graphical.target
 
 [Service]
 Type=forking
-ExecStart=/usr/local/bin/lotos_idle
+ExecStart=/usr/local/bin/lotos-idle
 Restart=always
 RestartSec=5
 User=input

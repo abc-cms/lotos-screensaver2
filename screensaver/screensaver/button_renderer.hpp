@@ -51,7 +51,7 @@ public:
 
 private:
     void rebuild(const bool rebuild_button, const bool rebuild_corner, const bool rebuild_text) {
-        std::cout << "rebuild" << std::endl;
+        //std::cout << "rebuild" << std::endl;
         if (rebuild_corner) {
             draw_circle_texture(m_radius, m_bg_color);
         }
@@ -123,7 +123,7 @@ private:
             height
         );
 
-        std::cout << "bwh " << width << " " << height << std::endl;
+        //std::cout << "bwh " << width << " " << height << std::endl;
 
         SDL_SetTextureBlendMode(m_button_texture, SDL_BLENDMODE_BLEND);
         SDL_SetRenderTarget(m_renderer, m_button_texture);

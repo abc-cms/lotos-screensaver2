@@ -139,19 +139,6 @@ protected:
         log->info("Deactivate the current screensaver (if active)");
         use_saver(saver_type_e::none);
 
-        // Configure X11 SCREENSAVER extension.
-        log->info("Configure X11 screensaver extension");
-        uint32_t mask = 0; // XCB_CW_BACK_PIXEL;
-        uint32_t values[] = {m_screen->black_pixel};
-        auto sse_data = xcb_get_extension_data(m_connection, &xcb_screensaver_id);
-        m_first_event = sse_data->first_event;
-        xcb_set_screen_saver(m_connection, m_configuration.timeout(), 0, XCB_BLANKING_PREFERRED,
-                             XCB_EXPOSURES_NOT_ALLOWED);
-        xcb_screensaver_set_attributes(m_connection, m_screen->root, 0, 0, m_screen->width_in_pixels,
-                                       m_screen->height_in_pixels, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT,
-                                       XCB_COPY_FROM_PARENT, m_screen->root_visual, mask, values);
-        xcb_screensaver_select_input(m_connection, m_screen->root, XCB_SCREENSAVER_EVENT_NOTIFY_MASK);
-        xcb_flush(m_connection);
         update_saver();
     }
 
@@ -291,20 +278,12 @@ private:
     std::condition_variable m_terminate_manager_thread_cv;
     std::atomic<bool> m_terminate_manager_thread = false;
 
-    xcb_window_t m_saver_window = 0;
     std::unique_ptr<saver_t> m_saver;
     saver_type_e m_saver_type = saver_type_e::none;
     bool m_saver_is_active = false;
     std::mutex m_saver_mutex;
 
-    xcb_colormap_t m_aux_colormap = 0;
-    xcb_window_t m_aux_window = 0;
-    xcb_depth_t *m_aux_depth = nullptr;
-    xcb_visualtype_t *m_aux_visual = nullptr;
-
     configuration_t m_configuration;
-
-    uint8_t m_first_event = 0;
 
     constexpr static std::chrono::steady_clock::duration update_configuration_rate = 60s;
     constexpr static std::chrono::steady_clock::duration update_saver_type_rate = 1s;

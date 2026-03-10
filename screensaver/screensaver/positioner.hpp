@@ -25,7 +25,7 @@ public:
     }
 
     void update(const float time) {
-        std::cout << time << std::endl;
+        //std::cout << time << std::endl;
         const int current_period = static_cast<int>(std::floor(time / m_full_duration));
         const float rest_period_time = std::fmod(time, m_full_duration);
     
@@ -35,7 +35,7 @@ public:
         }
 
         m_interpolation_factor = std::max(0.f, (rest_period_time - m_switch_duration)) / static_cast<float>(m_animation_duration);
-        std::cout << current_period << " " << previous_period << " " << rest_period_time << " " <<  m_interpolation_factor << std::endl;
+        //std::cout << current_period << " " << previous_period << " " << rest_period_time << " " <<  m_interpolation_factor << std::endl;
     }
 
     std::tuple<int, int, int, int> button_rectangle() const {

@@ -40,7 +40,7 @@ public:
     }
 
     int run() {
-        std::cout << get_configuration_path() << std::endl;
+        //std::cout << get_configuration_path() << std::endl;
         m_configuration = configuration_t::load(get_configuration_path());
 
         char *api_type = MPV_RENDER_API_TYPE_SW;
@@ -54,11 +54,13 @@ public:
         m_wakeup_on_mpv_render_update = SDL_RegisterEvents(1);
         m_wakeup_on_mpv_events = SDL_RegisterEvents(1);
         m_timer_event = SDL_RegisterEvents(1);
+        m_update_settings_timer_event = SDL_RegisterEvents(1);
 
         mpv_set_wakeup_callback(m_mpv, &renderer_t::on_mpv_events, nullptr);
         mpv_render_context_set_update_callback(m_render_context, &renderer_t::on_mpv_render_update, nullptr);
 
         m_timer_id = SDL_AddTimer(33, &renderer_t::timer_callback, &m_timer_event);
+        m_update_settings_timer_id = SDL_AddTimer(10000, &renderer_t::timer_callback, &m_update_settings_timer_event);
 
         int result = loop();
 
@@ -68,6 +70,27 @@ public:
     }
 
 private:
+    bool is_active_period() const {
+        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::tm local = *std::localtime(&now);
+
+        int hours = local.tm_hour;
+        int minutes = local.tm_min;
+
+        for (const auto &interval : m_configuration.activity_frames()) {
+            const auto start_hours = interval.start.hours;
+            const auto start_minutes = interval.start.minutes;
+            const auto end_hours = interval.end.hours;
+            const auto end_minutes = interval.end.minutes;
+
+            if ((hours > start_hours || (hours == start_hours && minutes >= start_minutes))
+                && (hours < end_hours || (hours == end_hours && minutes < end_minutes))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void cleanup() {
         if (m_texture) {
             SDL_DestroyTexture(m_texture);
@@ -89,6 +112,12 @@ private:
                 return -1;
             }
 
+            bool is_active = is_active_period();
+            std::cout << "active: " << is_active << std::endl;
+            if (!is_active) {
+                stop();
+            }
+
             bool redraw_frame = false;
             bool redraw_button = false;
 
@@ -100,9 +129,11 @@ private:
 
             case SDL_WINDOWEVENT: {
                 if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-                    load();
-                    redraw_frame = true;
-                    redraw_button = true;
+                    if (is_active) {
+                        try_load();
+                        redraw_frame = true;
+                        redraw_button = true;
+                    }
                 }
                 break;
             }
@@ -111,37 +142,52 @@ private:
                 break;
 
             default: {
-                if (event.type == m_wakeup_on_mpv_render_update) {
-                    const uint64_t flags = mpv_render_context_update(m_render_context);
-                    if (flags & MPV_RENDER_UPDATE_FRAME) {
-                        redraw_frame = true;
-                        redraw_button = true;
-                    }
-                }
-
-                if (event.type == m_wakeup_on_mpv_events) {
-                    while (true) {
-                        const mpv_event *event = mpv_wait_event(m_mpv, 0);
-
-                        if (event->event_id == MPV_EVENT_END_FILE) {
-                            load();
+                if (is_active) {
+                    if (event.type == m_wakeup_on_mpv_render_update) {
+                        const uint64_t flags = mpv_render_context_update(m_render_context);
+                        if (flags & MPV_RENDER_UPDATE_FRAME) {
                             redraw_frame = true;
                             redraw_button = true;
-                        } else if (event->event_id == MPV_EVENT_NONE) {
-                            break;
                         }
                     }
-                }
 
-                if (event.type == m_timer_event) {
-                    redraw_button = true;
+                    if (event.type == m_wakeup_on_mpv_events) {
+                        while (true) {
+                            const mpv_event *event = mpv_wait_event(m_mpv, 0);
+
+                            if (event->event_id == MPV_EVENT_END_FILE) {
+                                try_load();
+                                redraw_frame = true;
+                                redraw_button = true;
+                            } else if (event->event_id == MPV_EVENT_NONE) {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (event.type == m_timer_event) {
+                        try_load(!m_was_active);
+                        redraw_button = true;
+                    }
+
+                    if (event.type == m_update_settings_timer_event) {
+                        auto configuration = configuration_t::load(get_configuration_path());
+                        if (m_configuration != configuration) {
+                            m_configuration = configuration;
+                            stop();
+                            try_load();
+                        }
+                    }
                 }
 
                 break;
             }
             }
             // std::cout << "redraw frame: " << redraw_frame << std::endl;
-            if (redraw_frame) {
+            if (!is_active) {
+                SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
+                SDL_RenderClear(m_renderer);
+            } else if (redraw_frame) {
                 redraw_window_frame(true);
                 redraw_button_frame();
             } else if (redraw_button) {
@@ -149,9 +195,11 @@ private:
                 redraw_button_frame();
             }
 
-            if (redraw_frame || redraw_button) {
+            if (redraw_frame || redraw_button || !is_active) {
                 SDL_RenderPresent(m_renderer);
             }
+
+            m_was_active = is_active;
         }
 
         return 0;
@@ -191,7 +239,7 @@ private:
     }
 
     void redraw_button_frame() {
-        std::cout << "button" << std::endl;
+        //std::cout << "button" << std::endl;
         const uint32_t ticks = SDL_GetTicks();
         const button_configuration_t &button_configuration = m_configuration.button();
 
@@ -226,22 +274,50 @@ private:
         // SDL_RenderCopy(m_renderer, button_tex, NULL, &button_rect);
     }
 
+    void try_load(const bool force = true) {
+        const uint32_t ticks = SDL_GetTicks();
+        std::cout << "[] " << ticks << " " << m_image_ticks << " " << static_cast<int>(m_image_ticks) - static_cast<int>(ticks) << std::endl;
+        if (m_image_ticks == 0) {
+            if (force) {
+                load();
+            }
+        } else if (m_image_ticks < ticks) {
+            m_image_ticks = 0;
+            load();
+        }
+    }
+
     void load() {
+        if (m_media_index < 0) {
+            m_media_index = 0;
+        }
         auto media = m_configuration.media()[m_media_index];
         auto media_type = media.media_type();
         auto media_path = absolute_path(media.path());
         auto media_duration = media.duration();
 
         if (media_type == media_type_e::image) {
+            m_image_ticks = SDL_GetTicks() + static_cast<uint32_t>(media_duration * 1000.f);
             auto duration = std::to_string(media_duration);
             const char *cmd[] = {"set_property", "image-display-duration", duration.c_str(), nullptr};
-            mpv_command_async(m_mpv, 0, cmd);
+            mpv_command(m_mpv, cmd);
+        } else {
+            m_image_ticks = 0;
         }
 
-        const char *cmd[] = {"loadfile", media_path.c_str(), nullptr};
-        mpv_command_async(m_mpv, 0, cmd);
+        const char *cmd[] = {"loadfile", media_path.c_str(), "replace", nullptr};
+        mpv_command(m_mpv, cmd);
 
         m_media_index = (m_media_index + 1) % m_configuration.media().size();
+    }
+
+    void stop() {
+        if (m_media_index >= 0) {
+            const char *cmd[] = {"stop", nullptr};
+            mpv_command(m_mpv, cmd);
+            m_media_index = -1;
+            m_image_ticks = 0;
+        }
     }
 
     static uint32_t timer_callback(const uint32_t interval, void *param) {
@@ -270,8 +346,9 @@ private:
     inline static uint32_t m_wakeup_on_mpv_render_update;
     inline static uint32_t m_wakeup_on_mpv_events;
     inline static uint32_t m_timer_event;
+    inline static uint32_t m_update_settings_timer_event;
 
-    int m_media_index = 0;
+    int m_media_index = -1;
 
     mpv_handle *m_mpv = nullptr;
     SDL_Window *m_window = nullptr;
@@ -282,5 +359,9 @@ private:
     int m_screen_height = -1;
     SDL_Texture *m_texture = nullptr;
 
+    uint32_t m_image_ticks = 0;
+    bool m_was_active = true;
+
     SDL_TimerID m_timer_id;
+    SDL_TimerID m_update_settings_timer_id;
 };
