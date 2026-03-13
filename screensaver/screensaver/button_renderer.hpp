@@ -16,7 +16,7 @@ public:
             m_initialized = true;
         }
 
-        m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", m_font_height);
+        m_font = TTF_OpenFont(m_font_path, m_font_height);
     }
 
     void set_renderer(SDL_Renderer* renderer) {
@@ -61,7 +61,7 @@ private:
             TTF_CloseFont(m_font);
         }
 
-        m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", m_font_height);
+        m_font = TTF_OpenFont(m_font_path, m_font_height);
     }
 
     void rebuild(const bool rebuild_button, const bool rebuild_corner, const bool rebuild_text) {
@@ -188,4 +188,5 @@ private:
     int m_radius = -1;
 
     uint32_t m_font_height = 14;
+    constexpr static const char *m_font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
 };
