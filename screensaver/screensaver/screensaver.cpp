@@ -1,19 +1,6 @@
-// Build with: gcc -o main_sw main_sw.c `pkg-config --libs --cflags mpv sdl2`
-// -std=c99
-
-#include <charconv>
-#include <iostream>
-#include <string>
-
-#include "configuration.hpp"
-#include "positioner.hpp"
 #include "screensaver/screensaver/renderer.hpp"
-#include <math.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
     // Initialize logger.

@@ -2,7 +2,6 @@
 
 #include <string>
 
-#include "screensaver/screensaver/configuration.hpp"
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL_render.h>
@@ -65,7 +64,6 @@ private:
     }
 
     void rebuild(const bool rebuild_button, const bool rebuild_corner, const bool rebuild_text) {
-        // std::cout << "rebuild" << std::endl;
         if (rebuild_corner) {
             draw_circle_texture(m_radius, m_bg_color);
         }
@@ -126,8 +124,6 @@ private:
 
         m_button_texture
             = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
-
-        // std::cout << "bwh " << width << " " << height << std::endl;
 
         SDL_SetTextureBlendMode(m_button_texture, SDL_BLENDMODE_BLEND);
         SDL_SetRenderTarget(m_renderer, m_button_texture);

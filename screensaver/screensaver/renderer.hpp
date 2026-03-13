@@ -2,13 +2,11 @@
 
 #include <cstdint>
 
-#include "SDL_pixels.h"
 #include "button_renderer.hpp"
 #include "configuration.hpp"
 #include "positioner.hpp"
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <mpv/client.h>
 #include <mpv/render.h>
 
 class renderer_t {
@@ -17,11 +15,8 @@ public:
         m_mpv = mpv_create();
 
         mpv_set_option_string(m_mpv, "vo", "libmpv");
-        // mpv_set_option_string(m_mpv, "keep-open", "always");
         mpv_set_option_string(m_mpv, "idle", "yes");
         mpv_set_option_string(m_mpv, "force-window", "yes");
-
-        // mpv_observe_property(m_mpv, 0, "eof-reached", MPV_FORMAT_FLAG);
 
         mpv_initialize(m_mpv);
         mpv_request_log_messages(m_mpv, "debug");
@@ -40,7 +35,6 @@ public:
     }
 
     int run() {
-        // std::cout << get_configuration_path() << std::endl;
         m_configuration = configuration_t::load(get_configuration_path());
 
         char *api_type = MPV_RENDER_API_TYPE_SW;
@@ -113,7 +107,6 @@ private:
             }
 
             bool is_active = is_active_period();
-            std::cout << "active: " << is_active << std::endl;
             if (!is_active) {
                 stop();
             }
@@ -183,7 +176,7 @@ private:
                 break;
             }
             }
-            // std::cout << "redraw frame: " << redraw_frame << std::endl;
+
             if (!is_active) {
                 SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
                 SDL_RenderClear(m_renderer);
@@ -239,7 +232,6 @@ private:
     }
 
     void redraw_button_frame() {
-        // std::cout << "button" << std::endl;
         const uint32_t ticks = SDL_GetTicks();
         const button_configuration_t &button_configuration = m_configuration.button();
 
@@ -257,28 +249,11 @@ private:
         m_button_renderer.render(button_configuration.text(), button_configuration.text_size(), right - left,
                                  bottom - top, bg_color, fg_color, button_configuration.corner_radius(), m_screen_width,
                                  bottom);
-
-        // SDL_Texture* button_tex = create_button_texture(
-        //     renderer,
-        //     font,
-        //     "EXIT",
-        //     br - bl, bb - bt,
-        //     bg, fg,
-        //     15
-        // );
-
-        // SDL_Rect button_rect = {bl, bt, br - bl, bb - bt};
-
-        // //SDL_Rect dst = { (int) 0, (int) 0, br - bl, bb - bt };
-        // // кнопка поверх видео
-
-        // SDL_RenderCopy(m_renderer, button_tex, NULL, &button_rect);
     }
 
     void try_load(const bool force = true) {
         const uint32_t ticks = SDL_GetTicks();
-        std::cout << "[] " << ticks << " " << m_image_ticks << " "
-                  << static_cast<int>(m_image_ticks) - static_cast<int>(ticks) << std::endl;
+
         if (m_image_ticks == 0) {
             if (force) {
                 load();
