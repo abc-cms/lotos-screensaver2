@@ -7,9 +7,7 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 
-// Forward declarations
-struct button_t;
-class button_layer_sdl;
+enum class display_mode { BLACK_SCREEN, VIDEO, IMAGE };
 
 enum class display_mode {
     BLACK_SCREEN,
@@ -56,9 +54,7 @@ private:
     bool m_initialized;
     SDL_Window *m_window;
     SDL_Renderer *m_renderer;
-    
-    std::unique_ptr<button_layer_sdl> m_button_layer;
-    
+
     // Configuration
     screensaver_settings m_settings;
     
