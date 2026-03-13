@@ -16,32 +16,38 @@ public:
             m_initialized = true;
         }
 
-        m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14);
+        m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", m_font_height);
     }
 
     void set_renderer(SDL_Renderer* renderer) {
         m_renderer = renderer;
     }
 
-    void render(const std::string& text, const int width, const int height, const SDL_Color& bg_color, const SDL_Color& fg_color, const int radius, const int window_width, const int bottom) {
+    void render(const std::string& text, const uint32_t font_height, const int width, const int height, const SDL_Color& bg_color, const SDL_Color& fg_color, const int radius, const int window_width, const int bottom) {
         const bool text_equal = text == m_text;
+        const bool font_height_equal = font_height == m_font_height;
         const bool width_equal = width == m_width;
         const bool height_equal = height == m_height;
         const bool bg_color_equal = compare_color(bg_color, m_bg_color);
         const bool fg_color_equal = compare_color(fg_color, m_fg_color);
         const bool radius_equal = radius == m_radius;
-        if (!text_equal || !width_equal || !height_equal || !bg_color_equal || ! fg_color_equal || !radius_equal) {
+        if (!text_equal || !font_height_equal || !width_equal || !height_equal || !bg_color_equal || ! fg_color_equal || !radius_equal) {
             m_text = text;
+            m_font_height = font_height;
             m_width = width;
             m_height = height;
             m_bg_color = bg_color;
             m_fg_color = fg_color;
             m_radius = radius;
 
+            if (!font_height_equal) {
+                rebuild_font();
+            }
+
             rebuild(
-                !(text_equal && width_equal && bg_color_equal && radius_equal),
+                !(text_equal && font_height_equal && width_equal && bg_color_equal && radius_equal),
                 !(bg_color_equal && radius_equal),
-                !(text_equal && width_equal && fg_color_equal && radius_equal)  
+                !(text_equal && font_height_equal && width_equal && fg_color_equal && radius_equal)
             );
         }
 
@@ -50,6 +56,14 @@ public:
     }
 
 private:
+    void rebuild_font() {
+        if (m_font) {
+            TTF_CloseFont(m_font);
+        }
+
+        m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", m_font_height);
+    }
+
     void rebuild(const bool rebuild_button, const bool rebuild_corner, const bool rebuild_text) {
         //std::cout << "rebuild" << std::endl;
         if (rebuild_corner) {
@@ -172,4 +186,6 @@ private:
     SDL_Color m_bg_color{0, 0, 0, 0};
     SDL_Color m_fg_color{0, 0, 0, 0};
     int m_radius = -1;
+
+    uint32_t m_font_height = 14;
 };

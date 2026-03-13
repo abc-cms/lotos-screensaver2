@@ -254,8 +254,9 @@ private:
         SDL_Color fg_color{static_cast<uint8_t>(fg_color_raw & 0xff), static_cast<uint8_t>((fg_color_raw >> 8) & 0xff),
                            static_cast<uint8_t>((fg_color_raw >> 16) & 0xff),
                            static_cast<uint8_t>((fg_color_raw >> 24) & 0xff)};
-        m_button_renderer.render(button_configuration.text(), right - left, bottom - top, bg_color, fg_color,
-                                 button_configuration.corner_radius(), m_screen_width, bottom);
+        m_button_renderer.render(button_configuration.text(), button_configuration.text_size(),
+                            right - left, bottom - top, bg_color, fg_color,
+                                button_configuration.corner_radius(), m_screen_width, bottom);
 
         // SDL_Texture* button_tex = create_button_texture(
         //     renderer,
