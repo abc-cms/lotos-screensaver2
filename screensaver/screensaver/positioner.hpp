@@ -1,14 +1,16 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
 #include <random>
 #include <tuple>
-#include <iostream>
+
 #include "screensaver/screensaver/configuration.hpp"
 
 class positioner_t {
 public:
-    void set_configuration(const button_configuration_t& configuration, const int window_width, const int window_height, const int button_height) {
+    void set_configuration(const button_configuration_t &configuration, const int window_width, const int window_height,
+                           const int button_height) {
         m_animation_duration = configuration.animation_duration();
         m_switch_duration = configuration.switch_duration();
         m_window_width = window_width;
@@ -25,36 +27,39 @@ public:
     }
 
     void update(const float time) {
-        //std::cout << time << std::endl;
+        // std::cout << time << std::endl;
         const int current_period = static_cast<int>(std::floor(time / m_full_duration));
         const float rest_period_time = std::fmod(time, m_full_duration);
-    
+
         if (current_period != previous_period) {
             update_offsets();
             previous_period = current_period;
         }
 
-        m_interpolation_factor = std::max(0.f, (rest_period_time - m_switch_duration)) / static_cast<float>(m_animation_duration);
-        //std::cout << current_period << " " << previous_period << " " << rest_period_time << " " <<  m_interpolation_factor << std::endl;
+        m_interpolation_factor
+            = std::max(0.f, (rest_period_time - m_switch_duration)) / static_cast<float>(m_animation_duration);
+        // std::cout << current_period << " " << previous_period << " " << rest_period_time << " " <<
+        // m_interpolation_factor << std::endl;
     }
 
     std::tuple<int, int, int, int> button_rectangle() const {
-        const int side_offset = static_cast<int>(round(m_previous_side_offset * (1 - m_interpolation_factor) + m_side_offset * m_interpolation_factor));
-        const int bottom_offset = static_cast<int>(round(m_previous_bottom_offset * (1 - m_interpolation_factor) + m_bottom_offset * m_interpolation_factor));
-        return {
-            side_offset,
-            m_window_width - side_offset,
-            m_window_height - bottom_offset - m_button_height,
-            m_window_height - bottom_offset
-        };
+        const int side_offset = static_cast<int>(
+            round(m_previous_side_offset * (1 - m_interpolation_factor) + m_side_offset * m_interpolation_factor));
+        const int bottom_offset = static_cast<int>(
+            round(m_previous_bottom_offset * (1 - m_interpolation_factor) + m_bottom_offset * m_interpolation_factor));
+        return {side_offset, m_window_width - side_offset, m_window_height - bottom_offset - m_button_height,
+                m_window_height - bottom_offset};
     }
 
 private:
     void update_offsets() {
         m_previous_side_offset = m_side_offset;
         m_previous_bottom_offset = m_bottom_offset;
-        m_side_offset = m_side_margin + static_cast<int>(round(static_cast<float>(m_side_margin_random) * distribution(generator)));
-        m_bottom_offset = m_bottom_margin + static_cast<int>(round(static_cast<float>(m_bottom_margin_random) * distribution(generator)));
+        m_side_offset = m_side_margin
+                        + static_cast<int>(round(static_cast<float>(m_side_margin_random) * distribution(generator)));
+        m_bottom_offset
+            = m_bottom_margin
+              + static_cast<int>(round(static_cast<float>(m_bottom_margin_random) * distribution(generator)));
     }
 
 private:

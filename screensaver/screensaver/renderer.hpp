@@ -40,7 +40,7 @@ public:
     }
 
     int run() {
-        //std::cout << get_configuration_path() << std::endl;
+        // std::cout << get_configuration_path() << std::endl;
         m_configuration = configuration_t::load(get_configuration_path());
 
         char *api_type = MPV_RENDER_API_TYPE_SW;
@@ -239,7 +239,7 @@ private:
     }
 
     void redraw_button_frame() {
-        //std::cout << "button" << std::endl;
+        // std::cout << "button" << std::endl;
         const uint32_t ticks = SDL_GetTicks();
         const button_configuration_t &button_configuration = m_configuration.button();
 
@@ -254,9 +254,9 @@ private:
         SDL_Color fg_color{static_cast<uint8_t>(fg_color_raw & 0xff), static_cast<uint8_t>((fg_color_raw >> 8) & 0xff),
                            static_cast<uint8_t>((fg_color_raw >> 16) & 0xff),
                            static_cast<uint8_t>((fg_color_raw >> 24) & 0xff)};
-        m_button_renderer.render(button_configuration.text(), button_configuration.text_size(),
-                            right - left, bottom - top, bg_color, fg_color,
-                                button_configuration.corner_radius(), m_screen_width, bottom);
+        m_button_renderer.render(button_configuration.text(), button_configuration.text_size(), right - left,
+                                 bottom - top, bg_color, fg_color, button_configuration.corner_radius(), m_screen_width,
+                                 bottom);
 
         // SDL_Texture* button_tex = create_button_texture(
         //     renderer,
@@ -277,7 +277,8 @@ private:
 
     void try_load(const bool force = true) {
         const uint32_t ticks = SDL_GetTicks();
-        std::cout << "[] " << ticks << " " << m_image_ticks << " " << static_cast<int>(m_image_ticks) - static_cast<int>(ticks) << std::endl;
+        std::cout << "[] " << ticks << " " << m_image_ticks << " "
+                  << static_cast<int>(m_image_ticks) - static_cast<int>(ticks) << std::endl;
         if (m_image_ticks == 0) {
             if (force) {
                 load();

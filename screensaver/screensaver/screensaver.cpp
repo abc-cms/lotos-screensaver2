@@ -1,26 +1,21 @@
-// Build with: gcc -o main_sw main_sw.c `pkg-config --libs --cflags mpv sdl2` -std=c99
+// Build with: gcc -o main_sw main_sw.c `pkg-config --libs --cflags mpv sdl2`
+// -std=c99
 
+#include <charconv>
+#include <iostream>
+#include <string>
+
+#include "configuration.hpp"
+#include "positioner.hpp"
 #include "screensaver/screensaver/renderer.hpp"
+#include <math.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
-#include <iostream>
-
-#include "positioner.hpp"
-#include <charconv>
-#include <string>
-#include <iostream>
-#include "configuration.hpp"
-#include <spdlog/sinks/rotating_file_sink.h>
-#include <spdlog/spdlog.h>
-
-
-
-
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     // Initialize logger.
     auto max_size = 1024 * 1024; // Set max log size to 1MB.
     auto max_files = 2;

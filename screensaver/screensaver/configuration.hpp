@@ -3,10 +3,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <list>
 #include <regex>
 #include <string>
-#include <iostream>
+
 #include <json/json.h>
 #include <parameters.hpp>
 #include <spdlog/spdlog.h>
@@ -19,13 +20,20 @@ public:
     bool operator!=(const media_configuration_t &) const = default;
 
     media_configuration_t(media_type_e media_type, const std::filesystem::path &path, float duration = 0.0)
-        : m_media_type(media_type), m_path(path), m_duration(duration) {}
+        : m_media_type(media_type), m_path(path), m_duration(duration) {
+    }
 
-    media_type_e media_type() const { return m_media_type; }
+    media_type_e media_type() const {
+        return m_media_type;
+    }
 
-    const std::filesystem::path &path() const { return m_path; }
+    const std::filesystem::path &path() const {
+        return m_path;
+    }
 
-    float duration() const { return m_duration; }
+    float duration() const {
+        return m_duration;
+    }
 
 private:
     media_type_e m_media_type;
@@ -38,31 +46,57 @@ public:
     bool operator==(const button_configuration_t &) const = default;
     bool operator!=(const button_configuration_t &) const = default;
 
-    const std::string &text() const { return m_text; }
+    const std::string &text() const {
+        return m_text;
+    }
 
-    uint32_t text_color() const { return m_text_color; }
+    uint32_t text_color() const {
+        return m_text_color;
+    }
 
-    uint32_t text_size() const { return m_text_size; }
+    uint32_t text_size() const {
+        return m_text_size;
+    }
 
-    uint32_t background_color() const { return m_background_color; }
+    uint32_t background_color() const {
+        return m_background_color;
+    }
 
-    uint32_t height() const { return m_height; }
+    uint32_t height() const {
+        return m_height;
+    }
 
-    uint32_t corner_radius() const { return m_corner_radius; }
+    uint32_t corner_radius() const {
+        return m_corner_radius;
+    }
 
-    uint32_t side_margin() const { return m_side_margin; }
+    uint32_t side_margin() const {
+        return m_side_margin;
+    }
 
-    uint32_t side_margin_random() const { return m_side_margin_random; }
+    uint32_t side_margin_random() const {
+        return m_side_margin_random;
+    }
 
-    uint32_t bottom_margin() const { return m_bottom_margin; }
+    uint32_t bottom_margin() const {
+        return m_bottom_margin;
+    }
 
-    uint32_t bottom_margin_random() const { return m_bottom_margin_random; }
+    uint32_t bottom_margin_random() const {
+        return m_bottom_margin_random;
+    }
 
-    float switch_duration() const { return m_switch_duration; }
+    float switch_duration() const {
+        return m_switch_duration;
+    }
 
-    uint32_t animation_steps() const { return m_animation_steps; }
+    uint32_t animation_steps() const {
+        return m_animation_steps;
+    }
 
-    float animation_duration() const { return m_animation_duration; }
+    float animation_duration() const {
+        return m_animation_duration;
+    }
 
 private:
     std::string m_text;
@@ -103,25 +137,33 @@ public:
     bool operator==(const configuration_t &) const = default;
     bool operator!=(const configuration_t &) const = default;
 
-    int timeout() const { return m_timeout; }
+    int timeout() const {
+        return m_timeout;
+    }
 
-    const auto &button() const { return m_button; }
+    const auto &button() const {
+        return m_button;
+    }
 
-    const auto media() const { return std::vector<media_configuration_t>(m_media.begin(), m_media.end()); }
+    const auto media() const {
+        return std::vector<media_configuration_t>(m_media.begin(), m_media.end());
+    }
 
-    const auto &activity_frames() const { return m_activity_frames; }
+    const auto &activity_frames() const {
+        return m_activity_frames;
+    }
 
     static configuration_t load(const std::filesystem::path &path) {
         configuration_t configuration;
-        //std::cout << 3<< std::endl;
+        // std::cout << 3<< std::endl;
         auto log = spdlog::get(log_name);
         log->info("Loading configuration from {}", static_cast<std::string>(path));
-        //std::cout << 4<< std::endl;
+        // std::cout << 4<< std::endl;
         Json::Value root;
         std::ifstream file(path);
 
         if (file.bad()) {
-            //std::cout << 5<< std::endl;
+            // std::cout << 5<< std::endl;
             log->error("Unable to open configuration file: {}", static_cast<std::string>(path));
             throw std::runtime_error("Read configuration error");
         }
@@ -132,7 +174,7 @@ public:
         if (!parseFromStream(builder, file, &root, &errors)) {
             log->error("Unable to load configuration from file {} due to errors: {}", static_cast<std::string>(path),
                        errors);
-            //std::cout << static_cast<std::string>(path) << " " << errors << std::endl;
+            // std::cout << static_cast<std::string>(path) << " " << errors << std::endl;
             throw std::runtime_error("Read configuration error");
         }
 
@@ -184,7 +226,7 @@ public:
         configuration.m_activity_frames.push_back(interval);
 
         log->info("Configuration loaded");
-        //std::cout << 100 << std::endl;
+        // std::cout << 100 << std::endl;
         return configuration;
     }
 
