@@ -113,8 +113,8 @@ private:
         auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         std::tm local = *std::localtime(&now);
 
-        int hours = local.tm_hour;
-        int minutes = local.tm_min;
+        uint32_t hours = static_cast<uint32_t>(local.tm_hour);
+        uint32_t minutes = static_cast<uint32_t>(local.tm_min);
 
         for (const auto &interval : m_configuration.activity_frames()) {
             const auto start_hours = interval.start.hours;
