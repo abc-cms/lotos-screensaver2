@@ -1,3 +1,11 @@
+/*!
+ * \file renderer.hpp
+ * \brief Header file containing the main renderer class for the lotos screensaver
+ *
+ * This file defines the renderer_t class that manages the complete screensaver
+ * functionality including video playback, button rendering, and event handling.
+ */
+
 #pragma once
 
 #include <cstdint>
@@ -9,8 +17,24 @@
 #include <SDL2/SDL_ttf.h>
 #include <mpv/render.h>
 
+/*!
+ * \class renderer_t
+ * \brief Main class that manages the lotos screensaver functionality
+ *
+ * This class is responsible for initializing the video playback system,
+ * managing the rendering loop, handling user input, and coordinating
+ * between various components like media playback, button positioning,
+ * and configuration management.
+ */
 class renderer_t {
 public:
+    /*!
+     * \brief Constructor for the renderer
+     *
+     * Initializes the renderer by setting up the MPV video player library,
+     * SDL video subsystem, creating window and renderer instances, and
+     * preparing the button renderer for drawing operations.
+     */
     renderer_t() {
         m_mpv = mpv_create();
 
@@ -29,11 +53,25 @@ public:
         m_button_renderer.set_renderer(m_renderer);
     }
 
+    /*!
+     * \brief Destructor for the renderer
+     *
+     * Cleans up resources by freeing the MPV render context and destroying
+     * the MPV handle.
+     */
     ~renderer_t() {
         mpv_render_context_free(m_render_context);
         mpv_destroy(m_mpv);
     }
 
+    /*!
+     * \brief Start the main rendering loop
+     * \return int Exit code of the application (0 for success)
+     *
+     * This function initializes the configuration, sets up MPV render context,
+     * registers event callbacks, and starts the main event loop that handles
+     * video playback, button rendering, and user interactions.
+     */
     int run() {
         m_configuration = configuration_t::load(get_configuration_path());
 
@@ -64,6 +102,13 @@ public:
     }
 
 private:
+    /*!
+     * \brief Check if current time is within active periods
+     * \return bool True if current time is within configured activity periods
+     *
+     * This function determines whether the screensaver should be active based
+     * on the configured time periods in the settings.
+     */
     bool is_active_period() const {
         auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         std::tm local = *std::localtime(&now);
@@ -85,6 +130,11 @@ private:
         return false;
     }
 
+    /*!
+     * \brief Clean up resources
+     *
+     * This function cleans up the texture resource when the application shuts down.
+     */
     void cleanup() {
         if (m_texture) {
             SDL_DestroyTexture(m_texture);
@@ -92,6 +142,13 @@ private:
         }
     }
 
+    /*!
+     * \brief Main event loop
+     * \return int Exit code of the application
+     *
+     * This is the main loop that handles all events, updates screen content,
+     * manages video playback, and handles user interactions.
+     */
     int loop() {
         SDL_Event event;
         bool loop_active = true;
@@ -198,6 +255,13 @@ private:
         return 0;
     }
 
+    /*!
+     * \brief Redraw the video window frame
+     * \param update_video Whether to update the video content
+     *
+     * This function renders the video content to the screen, managing texture
+     * creation and updating based on current window dimensions and video frames.
+     */
     void redraw_window_frame(const bool update_video) {
         if (update_video || !m_texture) {
             int window_width, window_height;
@@ -231,6 +295,13 @@ private:
         SDL_RenderCopy(m_renderer, m_texture, nullptr, nullptr);
     }
 
+    /*!
+     * \brief Redraw the button frame
+     *
+     * This function renders the button with current position and styling,
+     * using the positioner to determine location and the button renderer
+     * for actual drawing.
+     */
     void redraw_button_frame() {
         const uint32_t ticks = SDL_GetTicks();
         const button_configuration_t &button_configuration = m_configuration.button();
@@ -251,6 +322,13 @@ private:
                                  bottom);
     }
 
+    /*!
+     * \brief Attempt to load media
+     * \param force Whether to force loading regardless of timing
+     *
+     * This function checks if it's time to load new media and calls the load
+     * function when appropriate.
+     */
     void try_load(const bool force = true) {
         const uint32_t ticks = SDL_GetTicks();
 
@@ -264,6 +342,12 @@ private:
         }
     }
 
+    /*!
+     * \brief Load and play media
+     *
+     * This function loads the next media file from the configuration and
+     * sets up the appropriate display duration for images.
+     */
     void load() {
         if (m_media_index < 0) {
             m_media_index = 0;
@@ -288,6 +372,12 @@ private:
         m_media_index = (m_media_index + 1) % m_configuration.media().size();
     }
 
+    /*!
+     * \brief Stop the currently playing media
+     *
+     * This function sends a stop command to the MPV player and resets
+     * internal media tracking.
+     */
     void stop() {
         if (m_media_index >= 0) {
             const char *cmd[] = {"stop", nullptr};
@@ -297,6 +387,15 @@ private:
         }
     }
 
+    /*!
+     * \brief Timer callback function
+     * \param interval Timer interval in milliseconds
+     * \param param Pointer to timer event parameter
+     * \return uint32_t The interval to maintain
+     *
+     * This static function handles timer events and posts corresponding
+     * SDL events to the event queue.
+     */
     static uint32_t timer_callback(const uint32_t interval, void *param) {
         SDL_Event event;
         SDL_zero(event);
@@ -305,40 +404,54 @@ private:
         return interval;
     }
 
+    /*!
+     * \brief MPV events callback function
+     * \param ctx Context pointer (unused)
+     *
+     * This static function handles MPV events by posting an SDL event
+     * to the main event queue.
+     */
     static void on_mpv_events(void *ctx) {
         SDL_Event event = {.type = m_wakeup_on_mpv_events};
         SDL_PushEvent(&event);
     }
 
+    /*!
+     * \brief MPV render update callback function
+     * \param ctx Context pointer (unused)
+     *
+     * This static function handles MPV render update events by posting
+     * an SDL event to the main event queue.
+     */
     static void on_mpv_render_update(void *ctx) {
         SDL_Event event = {.type = m_wakeup_on_mpv_render_update};
         SDL_PushEvent(&event);
     }
 
 private:
-    configuration_t m_configuration;
-    positioner_t m_positioner;
-    button_renderer_t m_button_renderer;
+    configuration_t m_configuration;     //!< Configuration settings for the screensaver
+    positioner_t m_positioner;           //!< Positioner for managing button location and animation
+    button_renderer_t m_button_renderer; //!< Renderer for drawing buttons with text
 
-    inline static uint32_t m_wakeup_on_mpv_render_update;
-    inline static uint32_t m_wakeup_on_mpv_events;
-    inline static uint32_t m_timer_event;
-    inline static uint32_t m_update_settings_timer_event;
+    inline static uint32_t m_wakeup_on_mpv_render_update; //!< SDL event ID for MPV render updates
+    inline static uint32_t m_wakeup_on_mpv_events;        //!< SDL event ID for MPV events
+    inline static uint32_t m_timer_event;                 //!< SDL event ID for timer events
+    inline static uint32_t m_update_settings_timer_event; //!< SDL event ID for settings update timer
 
-    int m_media_index = -1;
+    int m_media_index = -1; //!< Index of the currently playing media file
 
-    mpv_handle *m_mpv = nullptr;
-    SDL_Window *m_window = nullptr;
-    SDL_Renderer *m_renderer = nullptr;
-    mpv_render_context *m_render_context = nullptr;
+    mpv_handle *m_mpv = nullptr;                    //!< MPV handle for video playback
+    SDL_Window *m_window = nullptr;                 //!< SDL window instance
+    SDL_Renderer *m_renderer = nullptr;             //!< SDL renderer instance
+    mpv_render_context *m_render_context = nullptr; //!< MPV render context
 
-    int m_screen_width = -1;
-    int m_screen_height = -1;
-    SDL_Texture *m_texture = nullptr;
+    int m_screen_width = -1;          //!< Current screen width
+    int m_screen_height = -1;         //!< Current screen height
+    SDL_Texture *m_texture = nullptr; //!< Texture for video rendering
 
-    uint32_t m_image_ticks = 0;
-    bool m_was_active = true;
+    uint32_t m_image_ticks = 0; //!< Timestamp for image display duration management
+    bool m_was_active = true;   //!< Flag tracking previous active state
 
-    SDL_TimerID m_timer_id;
-    SDL_TimerID m_update_settings_timer_id;
+    SDL_TimerID m_timer_id;                 //!< Timer ID for regular updates
+    SDL_TimerID m_update_settings_timer_id; //!< Timer ID for configuration updates
 };
