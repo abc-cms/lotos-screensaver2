@@ -1,16 +1,11 @@
 [Unit]
 Description=Lotos Idle Daemon
-After=graphical.target
 
 [Service]
-Type=forking
+Type=simple
 ExecStart=/usr/local/bin/lotos-idle
 Restart=always
 RestartSec=5
-User=input
-Group=input
-StandardOutput=journal
-StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
