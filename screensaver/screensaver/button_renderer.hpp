@@ -73,7 +73,8 @@ public:
         const bool text_equal = text == m_text;
         const bool font_height_equal = font_height == m_font_height;
         const bool width_equal = width == m_width;
-        const bool height_equal = height == m_height;
+        const int adjusted_height = std::max(height, m_text_height + 2 * (m_radius + 1));
+        const bool height_equal = adjusted_height == m_height;
         const bool bg_color_equal = compare_color(bg_color, m_bg_color);
         const bool fg_color_equal = compare_color(fg_color, m_fg_color);
         const bool radius_equal = radius == m_radius;
