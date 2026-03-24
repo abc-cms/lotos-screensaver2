@@ -120,7 +120,7 @@ void idle_daemon::load_config() {
         std::cerr << "JSON error: " << e.what() << std::endl;
     }
 
-    idle_timeout_sec = inactivity_timeout * 10;
+    idle_timeout_sec = inactivity_timeout;
 
     saver_cmd.clear();
     saver_cmd.push_back("lotos-screensaver");
@@ -240,7 +240,6 @@ int idle_daemon::run() {
         auto idle = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity).count();
 
         if (idle >= idle_timeout_sec) {
-            std::cout << "attempt to start saver after " << idle << " second(s) of inactivity" << std::endl;
             start_saver();
         }
     }
