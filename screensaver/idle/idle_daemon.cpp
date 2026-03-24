@@ -120,7 +120,7 @@ void idle_daemon::load_config() {
         std::cerr << "JSON error: " << e.what() << std::endl;
     }
 
-    idle_timeout_sec = inactivity_timeout * 60;
+    idle_timeout_sec = inactivity_timeout * 10;
 
     saver_cmd.clear();
     saver_cmd.push_back("lotos-screensaver");
@@ -154,6 +154,7 @@ void idle_daemon::start_saver() {
     if (saver_pid > 0 || saver_cmd.empty())
         return;
 
+    std::cout << "start saver" << std::endl;
     saver_pid = fork();
     if (saver_pid == 0) {
         std::vector<char *> argv;
@@ -174,8 +175,10 @@ void idle_daemon::start_saver() {
  */
 void idle_daemon::stop_saver() {
     if (saver_pid > 0) {
-        kill(saver_pid, SIGTERM);
-        waitpid(saver_pid, nullptr, 0);
+        std::cout << "stop saver" << std::endl;
+        if (kill(saver_pid, SIGTERM) == 0) {
+            waitpid(saver_pid, nullptr, 0);
+        }
         saver_pid = -1;
     }
 }
@@ -237,6 +240,7 @@ int idle_daemon::run() {
         auto idle = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity).count();
 
         if (idle >= idle_timeout_sec) {
+            std::cout << "attempt to start saver after " << idle << " second(s) of inactivity" << std::endl;
             start_saver();
         }
     }
