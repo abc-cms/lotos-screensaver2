@@ -1,0 +1,8 @@
+[Unit]
+Description=Lotos Screensaver
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/lotos-screensaver
+Restart=always

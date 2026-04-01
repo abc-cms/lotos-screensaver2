@@ -1,8 +1,0 @@
-[Unit]
-Description=Watch lotos config.json
-
-[Path]
-PathChanged=%h/Documents/config/config.json
-
-[Install]
-WantedBy=default.target

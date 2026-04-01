@@ -1,0 +1,8 @@
+[Unit]
+Description=Lotos Config Watcher
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/start-watch.sh
+Restart=always
+RestartSec=2

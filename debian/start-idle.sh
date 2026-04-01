@@ -12,7 +12,6 @@ if ! [[ "$TIMEOUT" =~ ^[0-9]+$ ]]; then
     TIMEOUT=60
 fi
 
-exec swayidle -w \
-  timeout "$TIMEOUT" '/usr/local/bin/lotos-screensaver' \
-  resume 'pkill -f /usr/local/bin/lotos-screensaver'
-  
+swayidle -w \
+  timeout "$TIMEOUT" "systemctl --user start lotos-screensaver.service" \
+  resume "systemctl --user stop lotos-screensaver.service"
