@@ -28,17 +28,3 @@ executable('lotos-screensaver',
   install: true,
   install_dir: '/usr/bin'
 )
-
-# Idle daemon executable
-idle_dep = dependency('libinput')
-udev_dep = dependency('libudev')
-json_dep = dependency('nlohmann_json')
-
-executable('lotos-idle',
-  'screensaver/idle/idle.cpp',
-  'screensaver/idle/idle_daemon.cpp',
-  include_directories: [common_inc],
-  dependencies: [idle_dep, udev_dep, json_dep],
-  install: true,
-  install_dir: '/usr/bin'
-)
