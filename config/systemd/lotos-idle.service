@@ -1,11 +1,13 @@
 [Unit]
-Description=Lotos Idle Daemon
+Description=Sway idle manager (lotos)
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/lotos-idle
+ExecStart=/usr/local/bin/start-idle.sh
 Restart=always
-RestartSec=5
+RestartSec=1
+StartLimitIntervalSec=0
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
