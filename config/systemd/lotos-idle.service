@@ -7,7 +7,6 @@ Type=simple
 ExecStart=/usr/local/bin/start-idle.sh
 Restart=always
 RestartSec=1
-StartLimitIntervalSec=0
 
 [Install]
 WantedBy=graphical-session.target

@@ -1,8 +1,13 @@
 [Unit]
 Description=Lotos Screensaver
 After=graphical.target
+StartLimitIntervalSec=0
+StartLimitBurst=0
 
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/lotos-screensaver
 Restart=always
+
+[Install]
+WantedBy=graphical-session.target
