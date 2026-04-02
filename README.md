@@ -22,7 +22,6 @@ cp config/systemd/lotos-screenasaver.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable lotos-idle.service
 systemctl --user enable lotos-watch.service
-systemctl --user enable lotos-screensaver.service
 systemctl --user start lotos-idle.service
 systemctl --user start lotos-watch.service
 ```
