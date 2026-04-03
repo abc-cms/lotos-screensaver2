@@ -257,7 +257,7 @@ private:
                 break;
 
             default: {
-                if (is_active) {
+                if (event.type == m_wakeup_on_mpv_render_update) {
                     if (m_render_context) {
                         const uint64_t flags = mpv_render_context_update(m_render_context);
                         if (flags & MPV_RENDER_UPDATE_FRAME) {
@@ -323,8 +323,6 @@ private:
             if (redraw_frame || redraw_button || !is_active) {
                 SDL_RenderPresent(m_renderer);
             }
-
-            m_was_active = is_active;
         }
 
         return 0;
@@ -407,8 +405,9 @@ private:
 
         for (size_t index = 0; index < m_configuration.media().size(); ++index) {
             const auto media = m_configuration.media()[index];
+            const std::string path = absolute_path(media.path());
             const char *load_file_cmd[]
-                = {"loadfile", media.path().c_str(), (index == 0) ? "append-play" : "append", nullptr};
+                = {"loadfile", path.c_str(), (index == 0) ? "append-play" : "append", nullptr};
             mpv_command(m_mpv, load_file_cmd);
         }
     }
