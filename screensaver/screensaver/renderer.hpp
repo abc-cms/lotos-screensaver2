@@ -16,7 +16,6 @@
 #include <SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <mpv/render.h>
-
 /*!
  * \class renderer_t
  * \brief Main class that manages the lotos screensaver functionality
@@ -36,19 +35,12 @@ public:
      * preparing the button renderer for drawing operations.
      */
     renderer_t() {
-        m_mpv = mpv_create();
-
-        mpv_set_option_string(m_mpv, "vo", "libmpv");
-        mpv_set_option_string(m_mpv, "idle", "yes");
-        mpv_set_option_string(m_mpv, "force-window", "yes");
-
-        mpv_initialize(m_mpv);
-        mpv_request_log_messages(m_mpv, "debug");
-
         SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
         SDL_Init(SDL_INIT_VIDEO);
 
-        SDL_CreateWindowAndRenderer(1000, 500, SDL_WINDOW_FULLSCREEN_DESKTOP, &m_window, &m_renderer);
+        SDL_Rect bounds;
+        SDL_GetDisplayBounds(0, &bounds);
+        SDL_CreateWindowAndRenderer(bounds.w, bounds.h, SDL_WINDOW_FULLSCREEN_DESKTOP, &m_window, &m_renderer);
 
         m_button_renderer.set_renderer(m_renderer);
     }
@@ -60,8 +52,7 @@ public:
      * the MPV handle.
      */
     ~renderer_t() {
-        mpv_render_context_free(m_render_context);
-        mpv_destroy(m_mpv);
+        destroy_player();
     }
 
     /*!
@@ -75,25 +66,13 @@ public:
     int run() {
         m_configuration = configuration_t::load(get_configuration_path());
 
-        char *api_type = MPV_RENDER_API_TYPE_SW;
-        int advanced_control = 1;
-        mpv_render_param params[] = {{MPV_RENDER_PARAM_API_TYPE, api_type},
-                                     {MPV_RENDER_PARAM_ADVANCED_CONTROL, &advanced_control},
-                                     {MPV_RENDER_PARAM_INVALID, nullptr}};
-
-        mpv_render_context_create(&m_render_context, m_mpv, params);
-
         m_wakeup_on_mpv_render_update = SDL_RegisterEvents(1);
         m_wakeup_on_mpv_events = SDL_RegisterEvents(1);
         m_timer_event = SDL_RegisterEvents(1);
         m_update_settings_timer_event = SDL_RegisterEvents(1);
 
-        mpv_set_wakeup_callback(m_mpv, &renderer_t::on_mpv_events, nullptr);
-        mpv_render_context_set_update_callback(m_render_context, &renderer_t::on_mpv_render_update, nullptr);
-
         m_timer_id = SDL_AddTimer(33, &renderer_t::timer_callback, &m_timer_event);
         m_update_settings_timer_id = SDL_AddTimer(10000, &renderer_t::timer_callback, &m_update_settings_timer_event);
-
         int result = loop();
 
         cleanup();
@@ -143,6 +122,85 @@ private:
     }
 
     /*!
+     * \brief Create and initialize the MPV player
+     *
+     * This function initializes the MPV video player with the required
+     * settings for screensaver functionality. It creates the MPV handle,
+     * sets up the video output to libmpv, disables audio output, and
+     * configures playlist looping.
+     */
+    void create_player() {
+        if (m_mpv) {
+            destroy_player();
+        }
+
+        m_mpv = mpv_create();
+
+        mpv_set_option_string(m_mpv, "vo", "libmpv");
+        mpv_set_option_string(m_mpv, "ao", "null");
+        mpv_set_option_string(m_mpv, "loop-playlist", "inf");
+
+        mpv_initialize(m_mpv);
+        mpv_request_log_messages(m_mpv, "debug");
+
+        char *api_type = MPV_RENDER_API_TYPE_SW;
+        int advanced_control = 1;
+        mpv_render_param params[] = {{MPV_RENDER_PARAM_API_TYPE, api_type},
+                                     {MPV_RENDER_PARAM_ADVANCED_CONTROL, &advanced_control},
+                                     {MPV_RENDER_PARAM_INVALID, nullptr}};
+
+        mpv_render_context_create(&m_render_context, m_mpv, params);
+
+        mpv_set_wakeup_callback(m_mpv, &renderer_t::on_mpv_events, nullptr);
+        mpv_render_context_set_update_callback(m_render_context, &renderer_t::on_mpv_render_update, nullptr);
+    }
+
+    /*!
+     * \brief Destroy and cleanup the MPV player
+     *
+     * This function cleans up the MPV player resources by freeing the
+     * render context and destroying the MPV handle. It should be called
+     * when the screensaver is being shut down or when switching between
+     * active and inactive states.
+     */
+    void destroy_player() {
+        if (m_render_context) {
+            mpv_render_context_set_update_callback(m_render_context, nullptr, nullptr);
+            mpv_render_context_free(m_render_context);
+            m_render_context = nullptr;
+        }
+        if (m_mpv) {
+            mpv_set_wakeup_callback(m_mpv, nullptr, nullptr);
+            mpv_destroy(m_mpv);
+            m_mpv = nullptr;
+        }
+    }
+
+    /*!
+     * \brief Get the current media index in the playlist
+     * \return int64_t The index of the currently playing media, or -1 if no media is playing
+     *
+     * This function retrieves the current position in the MPV playlist.
+     * It returns the index of the current media file or -1 if no media is playing.
+     */
+    int64_t media_index() const {
+        int64_t position = -1;
+        mpv_get_property(m_mpv, "playlist-pos", MPV_FORMAT_INT64, &position);
+        return position;
+    }
+
+    /*!
+     * \brief Check if the player is in idle state
+     * \return bool True if no media is currently playing, false otherwise
+     *
+     * This function determines if the media player is currently idle,
+     * which occurs when no media is playing (media_index() returns -1).
+     */
+    bool is_idle() const {
+        return media_index() < 0;
+    }
+
+    /*!
      * \brief Main event loop
      * \return int Exit code of the application
      *
@@ -160,13 +218,20 @@ private:
 
         while (loop_active) {
             if (SDL_WaitEvent(&event) != 1) {
-                return -1;
+                char *const args[] = {(char *)"lotos-screensaver", nullptr};
+                execv("/proc/self/exe", args);
             }
 
             bool is_active = is_active_period();
-            if (!is_active) {
-                stop();
+
+            if (m_was_active && !is_active) {
+                destroy_player();
+            } else if (is_active && !m_was_active) {
+                create_player();
+                load_list();
             }
+
+            m_was_active = is_active;
 
             bool redraw_frame = false;
             bool redraw_button = false;
@@ -179,8 +244,8 @@ private:
 
             case SDL_WINDOWEVENT: {
                 if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-                    if (is_active) {
-                        try_load();
+                    if (is_active && is_idle()) {
+                        load_list();
                         redraw_frame = true;
                         redraw_button = true;
                     }
@@ -193,40 +258,50 @@ private:
 
             default: {
                 if (is_active) {
-                    if (event.type == m_wakeup_on_mpv_render_update) {
+                    if (m_render_context) {
                         const uint64_t flags = mpv_render_context_update(m_render_context);
                         if (flags & MPV_RENDER_UPDATE_FRAME) {
                             redraw_frame = true;
                             redraw_button = true;
                         }
                     }
+                }
 
-                    if (event.type == m_wakeup_on_mpv_events) {
-                        while (true) {
-                            const mpv_event *event = mpv_wait_event(m_mpv, 0);
+                if (event.type == m_wakeup_on_mpv_events) {
+                    while (true) {
+                        if (!m_mpv) {
+                            break;
+                        }
 
-                            if (event->event_id == MPV_EVENT_END_FILE) {
-                                try_load();
-                                redraw_frame = true;
-                                redraw_button = true;
-                            } else if (event->event_id == MPV_EVENT_NONE) {
-                                break;
+                        const mpv_event *event = mpv_wait_event(m_mpv, 0);
+
+                        if (event->event_id == MPV_EVENT_START_FILE) {
+                            double duration = 10;
+
+                            int64_t index = media_index();
+                            if (index >= 0 && index < m_configuration.media().size()) {
+                                const auto &media = m_configuration.media()[index];
+                                if (media.media_type() == media_type_e::image) {
+                                    duration = media.duration();
+                                }
                             }
+                            mpv_set_property(m_mpv, "image-display-duration", MPV_FORMAT_DOUBLE, &duration);
+
+                        } else if (event->event_id == MPV_EVENT_NONE) {
+                            break;
                         }
                     }
+                }
 
-                    if (event.type == m_timer_event) {
-                        try_load(!m_was_active);
-                        redraw_button = true;
-                    }
+                if (event.type == m_timer_event) {
+                    redraw_button = true;
+                }
 
-                    if (event.type == m_update_settings_timer_event) {
-                        auto configuration = configuration_t::load(get_configuration_path());
-                        if (m_configuration != configuration) {
-                            m_configuration = configuration;
-                            stop();
-                            try_load();
-                        }
+                if (event.type == m_update_settings_timer_event) {
+                    auto configuration = configuration_t::load(get_configuration_path());
+                    if (m_configuration != configuration) {
+                        m_configuration = configuration;
+                        load_list();
                     }
                 }
 
@@ -322,68 +397,19 @@ private:
                                  bottom);
     }
 
-    /*!
-     * \brief Attempt to load media
-     * \param force Whether to force loading regardless of timing
-     *
-     * This function checks if it's time to load new media and calls the load
-     * function when appropriate.
-     */
-    void try_load(const bool force = true) {
-        const uint32_t ticks = SDL_GetTicks();
-
-        if (m_image_ticks == 0) {
-            if (force) {
-                load();
-            }
-        } else if (m_image_ticks < ticks) {
-            m_image_ticks = 0;
-            load();
-        }
-    }
-
-    /*!
-     * \brief Load and play media
-     *
-     * This function loads the next media file from the configuration and
-     * sets up the appropriate display duration for images.
-     */
-    void load() {
-        if (m_media_index < 0) {
-            m_media_index = 0;
-        }
-        auto media = m_configuration.media()[m_media_index];
-        auto media_type = media.media_type();
-        auto media_path = absolute_path(media.path());
-        auto media_duration = media.duration();
-
-        if (media_type == media_type_e::image) {
-            m_image_ticks = SDL_GetTicks() + static_cast<uint32_t>(media_duration * 1000.f);
-            auto duration = std::to_string(media_duration);
-            const char *cmd[] = {"set_property", "image-display-duration", duration.c_str(), nullptr};
-            mpv_command(m_mpv, cmd);
-        } else {
-            m_image_ticks = 0;
+    void load_list() {
+        if (!m_mpv) {
+            return;
         }
 
-        const char *cmd[] = {"loadfile", media_path.c_str(), "replace", nullptr};
-        mpv_command(m_mpv, cmd);
+        const char *playlist_clear_cmd[] = {"playlist-clear", nullptr};
+        mpv_command(m_mpv, playlist_clear_cmd);
 
-        m_media_index = (m_media_index + 1) % m_configuration.media().size();
-    }
-
-    /*!
-     * \brief Stop the currently playing media
-     *
-     * This function sends a stop command to the MPV player and resets
-     * internal media tracking.
-     */
-    void stop() {
-        if (m_media_index >= 0) {
-            const char *cmd[] = {"stop", nullptr};
-            mpv_command(m_mpv, cmd);
-            m_media_index = -1;
-            m_image_ticks = 0;
+        for (size_t index = 0; index < m_configuration.media().size(); ++index) {
+            const auto media = m_configuration.media()[index];
+            const char *load_file_cmd[]
+                = {"loadfile", media.path().c_str(), (index == 0) ? "append-play" : "append", nullptr};
+            mpv_command(m_mpv, load_file_cmd);
         }
     }
 
@@ -438,8 +464,6 @@ private:
     inline static uint32_t m_timer_event;                 //!< SDL event ID for timer events
     inline static uint32_t m_update_settings_timer_event; //!< SDL event ID for settings update timer
 
-    int m_media_index = -1; //!< Index of the currently playing media file
-
     mpv_handle *m_mpv = nullptr;                    //!< MPV handle for video playback
     SDL_Window *m_window = nullptr;                 //!< SDL window instance
     SDL_Renderer *m_renderer = nullptr;             //!< SDL renderer instance
@@ -449,8 +473,7 @@ private:
     int m_screen_height = -1;         //!< Current screen height
     SDL_Texture *m_texture = nullptr; //!< Texture for video rendering
 
-    uint32_t m_image_ticks = 0; //!< Timestamp for image display duration management
-    bool m_was_active = true;   //!< Flag tracking previous active state
+    bool m_was_active = false; //!< Flag tracking previous active state
 
     SDL_TimerID m_timer_id;                 //!< Timer ID for regular updates
     SDL_TimerID m_update_settings_timer_id; //!< Timer ID for configuration updates
